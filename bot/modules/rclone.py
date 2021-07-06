@@ -34,7 +34,7 @@ def start_rclonecopy(client, message):
 def run_rclonecopy(onedir,twodir,client, message):
 
     name=f"{str(message.message_id)}_{str(message.chat.id)}"
-    shell=f"rclone copy {onedir} {twodir}  -v --stats-one-line --stats=3s --transfers 16 --cache-chunk-size 20M --log-file=\"{name}.log\" "
+    shell=f"rclone copy {onedir} {twodir}  --transfers 16 --cache-chunk-size 20M -v --stats-one-line --stats=3s --log-file=\"{name}.log\" "
     print(shell)
     sys.stdout.flush()
     try:
