@@ -79,7 +79,7 @@ def run_rclonecopy(onedir,twodir,client, message):
                      f"传输进度：`{upload_Progress}`\n" \
                      f"传输速度：`{upload_speed}`\n" \
                      f"剩余时间:`{part_time}`\n" \
-                     f"全部:`{last_line}`"
+                     f"`{last_line}`"
                     try:
                         client.edit_message_text(text=text,chat_id=info.chat.id,message_id=info.message_id,parse_mode='markdown')
                     except Exception as e:
@@ -151,7 +151,7 @@ def run_rclonecopyurl(url,client, message):
                      f"传输进度：`{upload_Progress}`\n" \
                      f"传输速度：`{upload_speed}`\n" \
                      f"剩余时间:`{part_time}`\n" \
-                     f"全部:`{last_line}`"
+                     f"`{last_line}`"
                     try:
                         client.edit_message_text(text=text,chat_id=info.chat.id,message_id=info.message_id,parse_mode='markdown')
                     except Exception as e:
