@@ -71,6 +71,7 @@ def run_rclonecopy(onedir,twodir,client, message):
                     print(last_line)
                     sys.stdout.flush()
                     log_time,file_part,upload_Progress,upload_speed,part_time=re.findall(".+?ETA (.+?)s",str(last_line) , re.S)[0]
+                    print(part_time)
                     text=f"源地址:`{onedir}`\n" \
                          f"目标地址:`{twodir}`\n" \
                          f"更新时间：`{log_time}`\n" \
