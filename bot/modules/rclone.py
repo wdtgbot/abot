@@ -70,7 +70,7 @@ def run_rclonecopy(onedir,twodir,client, message):
                 if temp_text != last_line and "ETA" in last_line:
                     print(last_line)
                     sys.stdout.flush()
-                    log_time,file_part,upload_Progress,upload_speed,part_time=re.findall(".+?ETA (.+?)s",str(last_line) , re.S)[0]
+                    log_time,file_part,upload_Progress,upload_speed,part_time=re.findall("(.*?)INFO.*?(\d.*?),.*?(\d+%),.*?(\d.*?s).*?ETA.*?(\d.*?)",last_line , re.S)[0]
                     print(part_time)
                     text=f"源地址:`{onedir}`\n" \
                          f"目标地址:`{twodir}`\n" \
@@ -78,7 +78,8 @@ def run_rclonecopy(onedir,twodir,client, message):
                      f"传输部分：`{file_part}`\n" \
                      f"传输进度：`{upload_Progress}`\n" \
                      f"传输速度：`{upload_speed}`\n" \
-                     f"剩余时间:`{part_time}`"
+                     f"剩余时间:`{part_time}`\n" \
+                     f"全部:`{last_line}`"
                     try:
                         client.edit_message_text(text=text,chat_id=info.chat.id,message_id=info.message_id,parse_mode='markdown')
                     except Exception as e:
@@ -142,14 +143,15 @@ def run_rclonecopyurl(url,client, message):
                 if temp_text != last_line and "ETA" in last_line:
                     print(last_line)
                     sys.stdout.flush()
-                    log_time,file_part,upload_Progress,upload_speed,part_time=re.findall(".+?ETA (.+?)s",str(last_line) , re.S)[0]
+                    log_time,file_part,upload_Progress,upload_speed,part_time=re.findall("(.*?)INFO.*?(\d.*?),.*?(\d+%),.*?(\d.*?s).*?ETA.*?(\d.*?)",last_line , re.S)[0]
                     text=f"源地址:`{url}`\n" \
                          f"目标地址:`{twodir}`\n" \
                          f"更新时间：`{log_time}`\n" \
                      f"传输部分：`{file_part}`\n" \
                      f"传输进度：`{upload_Progress}`\n" \
                      f"传输速度：`{upload_speed}`\n" \
-                     f"剩余时间:`{part_time}`"
+                     f"剩余时间:`{part_time}`\n" \
+                     f"全部:`{last_line}`"
                     try:
                         client.edit_message_text(text=text,chat_id=info.chat.id,message_id=info.message_id,parse_mode='markdown')
                     except Exception as e:
