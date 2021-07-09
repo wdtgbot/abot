@@ -65,7 +65,7 @@ def run_rclonecopy(onedir,twodir,client, message):
                     if last_line !="\n":
                         break
 
-                print (f"上传中\n{last_line}")
+                #print (f"上传中\n{last_line}")
                 sys.stdout.flush()
                 if temp_text != last_line and "ETA" in last_line:
                     #print(last_line)
@@ -136,7 +136,7 @@ def run_rclonecopyurl(url,client, message):
                     if last_line !="\n":
                         break
 
-                print (f"上传中\n{last_line}")
+                #print (f"上传中\n{last_line}")
                 sys.stdout.flush()
                 if temp_text != last_line and "ETA" in last_line:
                     #print(last_line)
