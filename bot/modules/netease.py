@@ -219,7 +219,7 @@ def downloadplaylist(client, call):
     song_list_info = requests.get(url=song_list_url, headers=headers)
     print(song_list_info.json())
     print(song_list_info.json()['playlist']['name'])
-    song_list = list(song_list_info.json()['playlist']['trackIds'])
+    song_list = list(song_list_info.json()['privileges'])
     song_id_list = []
 
     for a in song_list:
@@ -248,8 +248,6 @@ def downloadplaylist(client, call):
         song_name_info_url = f"https://benchaonetease.vercel.app/song/detail?ids={song_id}"
         song_name_info = requests.get(url=song_name_info_url)
         song_name = f"{song_name_info.json()['songs'][0]['name']}.{str(song_info.json()['data'][0]['type']).lower()}"
-
-        song_name=str(song_name).replace("\\", "").replace("/", "").replace('?', '').replace('*', '').replace('・', '').replace('！', '').replace('|', '').replace(' ', '')
 
         img_url = song_name_info.json()['songs'][0]['al']['picUrl']
         img = requests.get(url=img_url)
@@ -299,20 +297,21 @@ def downloadplaylist(client, call):
                                   progress_args=(client, info, song_name,))
                 os.remove(filepath)
                 os.remove(picpath)
+                client.send_message(chat_id=call.message.chat.id, text="上传结束", parse_mode='markdown')
             else:
                 os.remove(picpath)
-        except Exception as e:
-            print(f'Error! {e}')
-            client.edit_message_text(text=f'Error! `{e}`', chat_id=info.chat.id,
-                                         message_id=info.message_id,
-                                         parse_mode='markdown')
-            continue
+        except:
+            print('Error!')
+            break
 
     if "rclone" in str(call.data):
         run_rclone(path, f"歌单{playlist}", info=info, file_num=2, client=client, message=info)
         os.system(f"rm -rf \"{path}\"")
-    if "tg" in str(call.data):
-        client.send_message(chat_id=call.message.chat.id, text="上传结束", parse_mode='markdown')
+
+
+
+
+
 
 
 async def get_song_info(client, message):
@@ -366,16 +365,14 @@ async def get_song_list_info(client, message):
         song_list_url = f"https://benchaonetease.vercel.app/playlist/detail?id={playlist}"
         print(song_list_url)
         song_list_info = requests.get(url=song_list_url, headers=headers)
-        #print(song_list_info.json())
-        song_json=song_list_info.json()
-        #print(song_list_info.json()['playlist']['name'])
-        song_list = list(song_json['privileges'])
+        print(song_list_info.json())
+        print(song_list_info.json()['playlist']['name'])
+        song_list = list(song_list_info.json()['privileges'])
         song_id_text = ""
         num = 1
-        list_num = len(song_json['playlist']['trackIds'])
-        print(f"歌曲数:{list_num}")
+        list_num = len(song_list)
         for a in song_list:
-            if num < len(song_list):
+            if num < list_num:
                 song_id_text = song_id_text + str(a['id']) + ","
             else:
                 song_id_text = song_id_text + str(a['id'])
