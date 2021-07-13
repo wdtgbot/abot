@@ -69,7 +69,7 @@ async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, 
                                          downloadURL.netloc, downloadURL.path).split("/")
         downloadURL = "/".join(downloadURL[:-1]) + \
                       "/download.aspx?UniqueId="
-        print(downloadURL)
+        #print(downloadURL)
 
     # print(reqf.headers)
 
@@ -105,12 +105,12 @@ async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, 
         else:
             fileCount += 1
             if num == -1 or start <= fileCount + _id < start + num:
-                print("\t" * layers, "文件 [%d]：%s\t独特ID：%s\t正在推送" %
+                #print("\t" * layers, "文件 [%d]：%s\t独特ID：%s\t正在推送" %
                       (fileCount + _id, i['FileLeafRef'], i["UniqueId"]))
                 cc = downloadURL + (i["UniqueId"][1:-1].lower())
                 download_path = f"/root/Download{str(query['id']).split('Documents', 1)[1]}"
                 dd = dict(out=i["FileLeafRef"], header=headerStr, dir=download_path)
-                print(cc, dd)
+                #print(cc, dd)
                 aria2Link = "http://localhost:8080/jsonrpc"
                 aria2Secret = os.environ.get('Aria2_secret')
                 jsonreq = json.dumps({'jsonrpc': '2.0', 'id': 'qwer',
@@ -118,7 +118,7 @@ async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, 
                                       "params": ["token:" + aria2Secret, [cc], dd]})
 
                 c = requests.post(aria2Link, data=jsonreq)
-                pprint(json.loads(c.text))
+                #pprint(json.loads(c.text))
                 text = f"推送下载：`{i['FileLeafRef']}`\n下载路径:`{download_path}`\n推送结果:`{c.text}`"
                 try:
                     await client.edit_message_text(text=text, chat_id=info.chat.id, message_id=info.message_id,
