@@ -106,7 +106,7 @@ async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, 
             fileCount += 1
             if num == -1 or start <= fileCount + _id < start + num:
                 #print("\t" * layers, "文件 [%d]：%s\t独特ID：%s\t正在推送" %
-                      (fileCount + _id, i['FileLeafRef'], i["UniqueId"]))
+                      #(fileCount + _id, i['FileLeafRef'], i["UniqueId"]))
                 cc = downloadURL + (i["UniqueId"][1:-1].lower())
                 download_path = f"/root/Download{str(query['id']).split('Documents', 1)[1]}"
                 dd = dict(out=i["FileLeafRef"], header=headerStr, dir=download_path)
