@@ -197,10 +197,10 @@ async def run_await_rclone(dir,title,info,file_num,client, message):
     name=f"{str(info.message_id)}_{str(info.chat.id)}"
     if int(file_num)==1:
         #shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
-        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
+        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" --transfers=8 --cache-chunk-size=20M "
     else:
         #shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
-        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
+        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" --transfers=8 --cache-chunk-size=20M "
     print(shell)
     cmd = subprocess.Popen(shell, stdin=subprocess.PIPE, stderr=sys.stderr, close_fds=True,
                            stdout=subprocess.PIPE, universal_newlines=True, shell=True, bufsize=1)
@@ -507,10 +507,10 @@ def run_rclone(dir,title,info,file_num,client, message):
     name=f"{str(info.message_id)}_{str(info.chat.id)}"
     if int(file_num)==1:
         #shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
-        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
+        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" --transfers=8 --cache-chunk-size=20M "
     else:
         #shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
-        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
+        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" --transfers=8 --cache-chunk-size=20M "
     print(shell)
     cmd = subprocess.Popen(shell, stdin=subprocess.PIPE, stderr=sys.stderr, close_fds=True,
                            stdout=subprocess.PIPE, universal_newlines=True, shell=True, bufsize=1)
