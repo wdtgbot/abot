@@ -15,6 +15,7 @@ from pprint import pprint
 from urllib import parse
 import json
 import requests
+from pyppeteer import launch
 
 import nest_asyncio
 
@@ -22,7 +23,38 @@ nest_asyncio.apply()
 os.system("df -lh")
 task=[]
 
-async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, _id=0):
+async def getpassword(iurl, password):
+    global pheader, url
+    browser = await launch(options={'args': ['--no-sandbox']})
+    page = await browser.newPage()
+    await page.goto(iurl, {'waitUntil': 'networkidle0'})
+    await page.focus("input[id='txtPassword']")
+    await page.keyboard.type(password)
+    verityElem = await page.querySelector("input[id='btnSubmitPassword']")
+    print("密码输入完成，正在跳转")
+
+    await asyncio.gather(
+        page.waitForNavigation(),
+        verityElem.click(),
+    )
+    url = await page.evaluate('window.location.href', force_expr=True)
+    await page.screenshot({'path': 'example.png'})
+    print("正在获取Cookie")
+    # print(p.headers, p.url)
+    _cookie = await page.cookies()
+    pheader = ""
+    for __cookie in _cookie:
+        coo = "{}={};".format(__cookie.get("name"), __cookie.get("value"))
+        pheader += coo
+    await browser.close()
+    return pheader,url
+
+
+async def downloadFiles(client,info,password,originalPath, req, layers, start=1, num=-1, _id=0):
+    #sudo apt-get install  gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget -y
+    #pyppeteer-install
+
+
     header = {
         'sec-ch-ua-mobile': '?0',
         'upgrade-insecure-requests': '1',
@@ -37,9 +69,27 @@ async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, 
 
     }
 
+    if password != "":
+        print("正在启动无头浏览器模拟输入密码")
+        text="正在启动无头浏览器模拟输入密码   "
+        await client.edit_message_text(text=text, chat_id=info.chat.id, message_id=info.message_id,
+                                       parse_mode='markdown')
+        pheader ,temp_url= asyncio.get_event_loop().run_until_complete(getpassword(originalPath, password))
+        print("无头浏览器关闭，正在获取文件列表")
+        text = "无头浏览器关闭，正在获取文件列表"
+        await client.edit_message_text(text=text, chat_id=info.chat.id, message_id=info.message_id,
+                                       parse_mode='markdown')
+
+        header['cookie'] = pheader
+        print(password)
+        print(pheader)
+        originalPath=temp_url
+        password=""
+
     if req == None:
         req = requests.session()
     # print(header)
+
     reqf = req.get(originalPath, headers=header)
     if "-my" not in originalPath:
         isSharepoint = True
@@ -69,7 +119,7 @@ async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, 
                                          downloadURL.netloc, downloadURL.path).split("/")
         downloadURL = "/".join(downloadURL[:-1]) + \
                       "/download.aspx?UniqueId="
-        #print(downloadURL)
+        print(downloadURL)
 
     # print(reqf.headers)
 
@@ -100,17 +150,17 @@ async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, 
                                "/AllItems.aspx?" + urllib.parse.urlencode(_query)
 
 
-            fileCount += await downloadFiles(client, info, originalPath, req, layers + 1, _id=fileCount, start=start,
+            fileCount += await downloadFiles(client, info,password, originalPath, req, layers + 1, _id=fileCount, start=start,
                                              num=num)
         else:
             fileCount += 1
             if num == -1 or start <= fileCount + _id < start + num:
-                #print("\t" * layers, "文件 [%d]：%s\t独特ID：%s\t正在推送" %
-                      #(fileCount + _id, i['FileLeafRef'], i["UniqueId"]))
+                print("\t" * layers, "文件 [%d]：%s\t独特ID：%s\t正在推送" %
+                      (fileCount + _id, i['FileLeafRef'], i["UniqueId"]))
                 cc = downloadURL + (i["UniqueId"][1:-1].lower())
                 download_path = f"/root/Download{str(query['id']).split('Documents', 1)[1]}"
                 dd = dict(out=i["FileLeafRef"], header=headerStr, dir=download_path)
-                #print(cc, dd)
+                print(cc, dd)
                 aria2Link = "http://localhost:8080/jsonrpc"
                 aria2Secret = os.environ.get('Aria2_secret')
                 jsonreq = json.dumps({'jsonrpc': '2.0', 'id': 'qwer',
@@ -118,7 +168,7 @@ async def downloadFiles(client,info,originalPath, req, layers, start=1, num=-1, 
                                       "params": ["token:" + aria2Secret, [cc], dd]})
 
                 c = requests.post(aria2Link, data=jsonreq)
-                #pprint(json.loads(c.text))
+                pprint(json.loads(c.text))
                 text = f"推送下载：`{i['FileLeafRef']}`\n下载路径:`{download_path}`\n推送结果:`{c.text}`"
                 try:
                     await client.edit_message_text(text=text, chat_id=info.chat.id, message_id=info.message_id,
@@ -135,13 +185,217 @@ async def odshare_download(client, message):
 
     try:
         odshare_url=str(message.text).split(" ")[1]
+        try:
+            password=str(message.text).split(" ")[2]
+        except:
+            password=""
         info = await client.send_message(chat_id=message.chat.id, text="开始抓取下载链接", parse_mode='markdown')
-        await downloadFiles(client,info,odshare_url, None, 0,start=1, num=-1)
-        await client.edit_message_text(text="推送至Aria2完成，可到AriaNG面板查看", chat_id=info.chat.id, message_id=info.message_id,
+        fileCount= await downloadFiles(client,info,password,odshare_url, None, 0,start=1, num=-1)
+        await client.edit_message_text(text=f"推送至Aria2完成，可到AriaNG面板查看\n本次推送{fileCount}个任务", chat_id=info.chat.id, message_id=info.message_id,
                                        parse_mode='markdown')
     except Exception as e:
         print(f"odshare error {e}")
         await client.send_message(chat_id=message.chat.id, text="抓取下载链接失败", parse_mode='markdown')
+
+
+async def login_of_share(client,info,link,admin,password):
+
+    url = "http://portal.office.com/onedrive"
+    # browser = await launch(headless=False,options={'args': ['--no-sandbox']})
+    browser = await launch(options={'args': ['--no-sandbox']})
+    page = await browser.newPage()
+    print(admin,password)
+
+    await page.goto(url, {'waitUntil': 'networkidle0'})
+
+
+    await page.type("input[id='i0116']", admin)
+    await client.edit_message_text(text=f"已输入账号", chat_id=info.chat.id,
+                                   message_id=info.message_id,
+                                   parse_mode='markdown')
+
+    await page.click("#idSIButton9")
+    await asyncio.sleep(3)
+
+    await page.type("input[id='i0118']", password)
+
+    print("密码输入完成，正在跳转")
+
+
+    await page.click("#idSIButton9")
+    await client.edit_message_text(text=f"密码输入完成，正在跳转", chat_id=info.chat.id,
+                                   message_id=info.message_id,
+                                   parse_mode='markdown')
+    await asyncio.sleep(3)
+
+    # await page.click("input[value='登录']")
+    # await page.keyboard.press('Enter')
+
+    await asyncio.wait([
+        page.click("#idSIButton9"),
+        page.waitForNavigation({'timeout': 50000}),
+    ])
+    await client.edit_message_text(text=f"选择保持登录状态", chat_id=info.chat.id,
+                                   message_id=info.message_id,
+                                   parse_mode='markdown')
+    await asyncio.sleep(5)
+    while not await page.querySelector('.od-ItemContent-title'):
+        pass
+
+    url = await page.evaluate('window.location.href', force_expr=True)
+    print(url)
+
+    res = await page.goto(link, {'waitUntil': 'networkidle0'})
+
+    url = await page.evaluate('window.location.href', force_expr=True)
+    print(url)
+
+    print("点击完成")
+
+    print(res.request.headers)
+
+    header = res.request.headers
+
+    _cookie = await page.cookies()
+    pheader = ""
+    for __cookie in _cookie:
+        coo = "{}={};".format(__cookie.get("name"), __cookie.get("value"))
+        pheader += coo
+
+    header['cookie'] = pheader
+    reqf = requests.get(url, headers=header)
+    print(reqf)
+    if reqf.status_code!=200:
+        return header,""
+    await browser.close()
+    return header,url
+
+async def odpriva_downloadFiles(client,info,admin,password,originalPath, req, layers, start=1, num=-1, _id=0):
+    header={}
+    if req == None:
+        req = requests.session()
+        header, originalPath = await login_of_share(client,info,originalPath, admin=admin, password=password)
+        if originalPath=="":
+            await client.edit_message_text(text=f"登录错误", chat_id=info.chat.id,
+                                           message_id=info.message_id,
+                                           parse_mode='markdown')
+            return
+    # print(header)
+
+    reqf = req.get(originalPath, headers=header)
+    if "-my" not in originalPath:
+        isSharepoint = True
+        print("sharepoint 链接")
+    else:
+        isSharepoint = False
+
+    # f=open()
+    if ',"FirstRow"' not in reqf.text:
+        print("\t" * layers, "这个文件夹没有文件")
+        return 0
+
+    pat = re.search(
+        'g_listData = {"wpq":"","Templates":{},"ListData":{ "Row" : ([\s\S]*?),"FirstRow"', reqf.text)
+    jsonData = json.loads(pat.group(1))
+    redirectURL = reqf.url
+    redirectSplitURL = redirectURL.split("/")
+    query = dict(urllib.parse.parse_qsl(
+        urllib.parse.urlsplit(redirectURL).query))
+    downloadURL = "/".join(redirectSplitURL[:-1]) + "/download.aspx?UniqueId="
+    if isSharepoint:
+        pat = re.search('templateUrl":"(.*?)"', reqf.text)
+
+        downloadURL = pat.group(1)
+        downloadURL = urllib.parse.urlparse(downloadURL)
+        downloadURL = "{}://{}{}".format(downloadURL.scheme,
+                                         downloadURL.netloc, downloadURL.path).split("/")
+        downloadURL = "/".join(downloadURL[:-1]) + \
+                      "/download.aspx?UniqueId="
+        print(downloadURL)
+
+    # print(reqf.headers)
+
+    s2 = urllib.parse.urlparse(redirectURL)
+    header["referer"] = redirectURL
+    #header["cookie"] = reqf.headers["set-cookie"]
+    header["authority"] = s2.netloc
+
+    headerStr = ""
+    for key, value in header.items():
+        # print(key+':'+str(value))
+        headerStr += key + ':' + str(value) + "\n"
+
+    fileCount = 0
+    # print(headerStr)
+    for i in jsonData:
+        if i['FSObjType'] == "1":
+            print("\t" * layers, "文件夹：",
+                  i['FileLeafRef'], "\t独特ID：", i["UniqueId"], "正在进入")
+            _query = query.copy()
+            _query['id'] = os.path.join(
+                _query['id'], i['FileLeafRef']).replace("\\", "/")
+            if not isSharepoint:
+                originalPath = "/".join(redirectSplitURL[:-1]) + \
+                               "/onedrive.aspx?" + urllib.parse.urlencode(_query)
+            else:
+                originalPath = "/".join(redirectSplitURL[:-1]) + \
+                               "/AllItems.aspx?" + urllib.parse.urlencode(_query)
+
+
+            fileCount += await odpriva_downloadFiles(client, info,admin,password, originalPath, req, layers + 1, _id=fileCount, start=start,
+                                             num=num)
+        else:
+            fileCount += 1
+            if num == -1 or start <= fileCount + _id < start + num:
+                print("\t" * layers, "文件 [%d]：%s\t独特ID：%s\t正在推送" %
+                      (fileCount + _id, i['FileLeafRef'], i["UniqueId"]))
+                cc = downloadURL + (i["UniqueId"][1:-1].lower())
+                download_path = f"/root/Download{str(query['id']).split('Documents', 1)[1]}"
+                dd = dict(out=i["FileLeafRef"], header=headerStr, dir=download_path)
+                print(cc, dd)
+                aria2Link = "http://localhost:8080/jsonrpc"
+                aria2Secret = os.environ.get('Aria2_secret')
+                jsonreq = json.dumps({'jsonrpc': '2.0', 'id': 'qwer',
+                                      'method': 'aria2.addUri',
+                                      "params": ["token:" + aria2Secret, [cc], dd]})
+
+                c = requests.post(aria2Link, data=jsonreq)
+
+                text = f"推送下载：`{i['FileLeafRef']}`\n下载路径:`{download_path}`\n推送结果:`{c.text}`"
+                try:
+                    await client.edit_message_text(text=text, chat_id=info.chat.id, message_id=info.message_id,
+                                                   parse_mode='markdown')
+                except Exception as e:
+                    print(f"修改信息失败:{e}")
+                time.sleep(0.5)
+            else:
+                print("\t" * layers, "文件 [%d]：%s\t独特ID：%s\t非目标文件" %
+                      (fileCount + _id, i['FileLeafRef'], i["UniqueId"]))
+    return fileCount
+
+
+async def odprivate_download(client, message):
+    try:
+
+        try:
+
+            login_info=str(message.text).split(" ")
+            print(login_info)
+            admin=login_info[1]
+            password=login_info[2]
+            odprivate_url=login_info[3]
+        except:
+            text="身份信息获取失败\n" \
+                 "使用方法为:/odprivate 邮箱 密码 链接"
+            await client.send_message(chat_id=message.chat.id, text=text, parse_mode='markdown')
+        info = await client.send_message(chat_id=message.chat.id, text="开始抓取下载链接", parse_mode='markdown')
+        fileCount= await odpriva_downloadFiles(client,info,admin,password,odprivate_url, None, 0,start=1, num=-1)
+        await client.edit_message_text(text=f"推送至Aria2完成，可到AriaNG面板查看\n本次推送{fileCount}个任务", chat_id=info.chat.id, message_id=info.message_id,
+                                       parse_mode='markdown')
+    except Exception as e:
+        print(f"odprivate error {e}")
+        await client.send_message(chat_id=message.chat.id, text=f"odprivate error {e}", parse_mode='markdown')
+
 
 def check_upload(api, gid):
 
@@ -196,11 +450,9 @@ async def run_await_rclone(dir,title,info,file_num,client, message):
     info = await client.send_message(chat_id=message.chat.id, text="开始上传", parse_mode='markdown')
     name=f"{str(info.message_id)}_{str(info.chat.id)}"
     if int(file_num)==1:
-        #shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
-        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" --transfers=8 --cache-chunk-size=20M "
+        shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
     else:
-        #shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
-        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" --transfers=8 --cache-chunk-size=20M "
+        shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
     print(shell)
     cmd = subprocess.Popen(shell, stdin=subprocess.PIPE, stderr=sys.stderr, close_fds=True,
                            stdout=subprocess.PIPE, universal_newlines=True, shell=True, bufsize=1)
@@ -222,14 +474,14 @@ async def run_await_rclone(dir,title,info,file_num,client, message):
                 if temp_text != last_line and "ETA" in last_line:
                     print(f"上传中\n{last_line} end")
                     sys.stdout.flush()
-                    log_time, file_part, upload_Progress, upload_speed, part_time = re.findall("(.*?)INFO.*?(\d.*?),.*?(\d+%),.*?(\d.*?),.*?ETA.*?(.+?)s", last_line, re.S)[0]
+                    log_time, file_part, upload_Progress, upload_speed, part_time = re.findall("(.*?)INFO.*?(\d.*?),.*?(\d+%),.*?(\d.*?),.*?ETA(.*)", last_line, re.S)[0]
 
                     text=f"{title}\n" \
                          f"更新时间：`{log_time}`\n" \
                          f"上传部分：`{file_part}`\n" \
                          f"上传进度：`{upload_Progress}`\n" \
                          f"上传速度：`{upload_speed}`\n" \
-                         f"剩余时间:`{part_time}`s"
+                         f"剩余时间:`{part_time}`"
                     try:
                         print(f"修改信息 {text}")
                         sys.stdout.flush()
@@ -506,11 +758,9 @@ def run_rclone(dir,title,info,file_num,client, message):
     Upload=os.environ.get('Upload')
     name=f"{str(info.message_id)}_{str(info.chat.id)}"
     if int(file_num)==1:
-        #shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
-        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" --transfers=8 --cache-chunk-size=20M "
+        shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
     else:
-        #shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
-        shell=f"rclone move \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" --transfers=8 --cache-chunk-size=20M "
+        shell=f"rclone copy \"{dir}\" \"{Rclone_remote}:{Upload}/{title}\"  -v --stats-one-line --stats=1s --log-file=\"{name}.log\" "
     print(shell)
     cmd = subprocess.Popen(shell, stdin=subprocess.PIPE, stderr=sys.stderr, close_fds=True,
                            stdout=subprocess.PIPE, universal_newlines=True, shell=True, bufsize=1)
@@ -530,13 +780,13 @@ def run_rclone(dir,title,info,file_num,client, message):
 
                 print (f"上传中\n{last_line}")
                 if temp_text != last_line and "ETA" in last_line:
-                    log_time,file_part,upload_Progress,upload_speed,part_time=re.findall("(.*?)INFO.*?(\d.*?),.*?(\d+%),.*?(\d.*?s).*?ETA.*?(.+?)s",last_line , re.S)[0]
+                    log_time,file_part,upload_Progress,upload_speed,part_time=re.findall("(.*?)INFO.*?(\d.*?),.*?(\d+%),.*?(\d.*?s).*?ETA.*?(\d.*?)",last_line , re.S)[0]
                     text=f"{title}\n" \
                          f"更新时间：`{log_time}`\n" \
                          f"上传部分：`{file_part}`\n" \
                          f"上传进度：`{upload_Progress}`\n" \
                          f"上传速度：`{upload_speed}`\n" \
-                         f"剩余时间:`{part_time}`s"
+                         f"剩余时间:`{part_time}`"
                     try:
                         client.edit_message_text(text=text,chat_id=info.chat.id,message_id=info.message_id,parse_mode='markdown')
                         temp_text = last_line
