@@ -45,10 +45,10 @@ DRIVE_PATH=$Upload
 #export RCLONE_CONFIG_PASS=password
 
 # RCLONE 并行上传文件数，仅对单个任务有效。
-#export RCLONE_TRANSFERS=4
+export RCLONE_TRANSFERS=8
 
 # RCLONE 块的大小，默认5M，理论上是越大上传速度越快，同时占用内存也越多。如果设置得太大，可能会导致进程中断。
-#export RCLONE_CACHE_CHUNK_SIZE=5M
+export RCLONE_CACHE_CHUNK_SIZE=20M
 
 # RCLONE 块可以在本地磁盘上占用的总大小，默认10G。
 #export RCLONE_CACHE_CHUNK_TOTAL_SIZE=10G
