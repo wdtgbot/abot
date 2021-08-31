@@ -17,7 +17,7 @@ def hum_convert(value):
             return "%.2f%s" % (value, units[i])
         value = value / size
 
-#@bot.message_handler(commands=['rclonecopy'],func=lambda message:str(message.chat.id) == str(Telegram_user_id))
+
 def start_rclonecopy(client, message):
     try:
         firstdir = message.text.split()[1]
@@ -65,10 +65,10 @@ def run_rclonecopy(onedir,twodir,client, message):
                     if last_line !="\n":
                         break
 
-                #print (f"上传中\n{last_line}")
+                print (f"上传中\n{last_line}")
                 sys.stdout.flush()
                 if temp_text != last_line and "ETA" in last_line:
-                    #print(last_line)
+                    print(last_line)
                     sys.stdout.flush()
                     log_time,file_part,upload_Progress,upload_speed,part_time=re.findall("(.*?)INFO.*?(\d.*?),.*?(\d+%),.*?(\d.*?s).*?ETA.*?(.+?)s",last_line , re.S)[0]
                     text=f"源地址:`{onedir}`\n" \
@@ -77,7 +77,7 @@ def run_rclonecopy(onedir,twodir,client, message):
                      f"传输部分：`{file_part}`\n" \
                      f"传输进度：`{upload_Progress}`\n" \
                      f"传输速度：`{upload_speed}`\n" \
-                     f"剩余时间:`{part_time}`s" 
+                     f"剩余时间:`{part_time}`"
                     try:
                         client.edit_message_text(text=text,chat_id=info.chat.id,message_id=info.message_id,parse_mode='markdown')
                     except Exception as e:
@@ -136,10 +136,10 @@ def run_rclonecopyurl(url,client, message):
                     if last_line !="\n":
                         break
 
-                #print (f"上传中\n{last_line}")
+                print (f"上传中\n{last_line}")
                 sys.stdout.flush()
                 if temp_text != last_line and "ETA" in last_line:
-                    #print(last_line)
+                    print(last_line)
                     sys.stdout.flush()
                     log_time,file_part,upload_Progress,upload_speed,part_time=re.findall("(.*?)INFO.*?(\d.*?),.*?(\d+%),.*?(\d.*?s).*?ETA.*?(.+?)s",last_line , re.S)[0]
                     text=f"源地址:`{url}`\n" \
@@ -148,7 +148,7 @@ def run_rclonecopyurl(url,client, message):
                      f"传输部分：`{file_part}`\n" \
                      f"传输进度：`{upload_Progress}`\n" \
                      f"传输速度：`{upload_speed}`\n" \
-                     f"剩余时间:`{part_time}`s" 
+                     f"剩余时间:`{part_time}`"
                     try:
                         client.edit_message_text(text=text,chat_id=info.chat.id,message_id=info.message_id,parse_mode='markdown')
                     except Exception as e:
@@ -170,7 +170,7 @@ def run_rclonecopyurl(url,client, message):
 
     return cmd.returncode
 
-#@bot.message_handler(commands=['rclonecopyurl'],func=lambda message:str(message.chat.id) == str(Telegram_user_id))
+
 def start_rclonecopyurl(client, message):
     try:
         url = message.text.split()[1]
@@ -184,7 +184,7 @@ def start_rclonecopyurl(client, message):
         sys.stdout.flush()
 
 
-#@bot.message_handler(commands=['rclonelsd'],func=lambda message:str(message.chat.id) == str(Telegram_user_id))
+
 async def start_rclonelsd(client, message):
     try:
         firstdir = message.text.split()[1]
@@ -198,7 +198,7 @@ async def start_rclonelsd(client, message):
         print(f"rclonelsd :{e}")
         sys.stdout.flush()
 
-#@bot.message_handler(commands=['rclone'],func=lambda message:str(message.chat.id) == str(Telegram_user_id))
+
 async def start_rclonels(client, message):
     try:
         firstdir = message.text.split()[1]
@@ -221,5 +221,4 @@ async def start_rclonels(client, message):
     except Exception as e:
         print(f"rclone :{e}")
         sys.stdout.flush()
-
 
