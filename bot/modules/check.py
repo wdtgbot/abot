@@ -32,7 +32,7 @@ def second_clock():
                 pass
             else:
                 if App_title!="":
-                    if "bash start.sh" in str(pinfo['name']):
+                    if "rclone" in str(pinfo['name']):
                         print("rclone 正在上传")
                         print(requests.get(url=f"https://{App_title}.herokuapp.com/"))
                         sys.stdout.flush()
